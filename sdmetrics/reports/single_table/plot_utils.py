@@ -6,6 +6,8 @@ import plotly.express as px
 from plotly import graph_objects as go
 from plotly.subplots import make_subplots
 
+from sdmetrics.reports.utils import PlotConfig
+
 
 def _get_column_shapes_data(score_breakdowns):
     """Convert the score breakdowns into the desired column shapes data format.
@@ -47,20 +49,19 @@ def get_column_shapes_plot(score_breakdowns, average_score=None):
         plotly.graph_objects._figure.Figure
     """
     data = _get_column_shapes_data(score_breakdowns)
-    data = data.rename(columns={'Score': 'Quality Score'})
     if average_score is None:
-        average_score = data['Quality Score'].mean()
+        average_score = data['Score'].mean()
 
     fig = px.bar(
         data,
         x='Column Name',
-        y='Quality Score',
+        y='Score',
         title=f'Data Quality: Column Shapes (Average Score={round(average_score, 2)})',
         category_orders={'group': data['Column Name']},
         color='Metric',
         color_discrete_map={
-            'KSComplement': '#000036',
-            'TVComplement': '#03AFF1',
+            'KSComplement': PlotConfig.DATACEBO_DARK,
+            'TVComplement': PlotConfig.DATACEBO_BLUE,
         },
         pattern_shape='Metric',
         pattern_shape_sequence=['', '/'],
@@ -68,7 +69,7 @@ def get_column_shapes_plot(score_breakdowns, average_score=None):
         hover_data={
             'Column Name': False,
             'Metric': True,
-            'Quality Score': True,
+            'Score': True,
         },
     )
 
@@ -76,8 +77,9 @@ def get_column_shapes_plot(score_breakdowns, average_score=None):
 
     fig.update_layout(
         xaxis_categoryorder='total ascending',
-        plot_bgcolor='#F5F5F8',
+        plot_bgcolor=PlotConfig.BACKGROUND_COLOR,
         margin={'t': 150},
+        font={'size': PlotConfig.FONT_SIZE},
     )
 
     return fig
@@ -109,8 +111,8 @@ def get_column_coverage_plot(score_breakdowns, average_score=None):
         category_orders={'group': data['Column Name']},
         color='Metric',
         color_discrete_map={
-            'RangeCoverage': '#000036',
-            'CategoryCoverage': '#03AFF1',
+            'RangeCoverage': PlotConfig.DATACEBO_DARK,
+            'CategoryCoverage': PlotConfig.DATACEBO_BLUE,
         },
         pattern_shape='Metric',
         pattern_shape_sequence=['', '/'],
@@ -126,8 +128,9 @@ def get_column_coverage_plot(score_breakdowns, average_score=None):
 
     fig.update_layout(
         xaxis_categoryorder='total ascending',
-        plot_bgcolor='#F5F5F8',
+        plot_bgcolor=PlotConfig.BACKGROUND_COLOR,
         margin={'t': 150},
+        font={'size': PlotConfig.FONT_SIZE},
     )
 
     return fig
@@ -159,7 +162,7 @@ def get_column_boundaries_plot(score_breakdowns, average_score=None):
         category_orders={'group': data['Column Name']},
         color='Metric',
         color_discrete_map={
-            'BoundaryAdherence': '#000036',
+            'BoundaryAdherence': PlotConfig.DATACEBO_DARK,
         },
         pattern_shape='Metric',
         pattern_shape_sequence=['', '/'],
@@ -175,8 +178,9 @@ def get_column_boundaries_plot(score_breakdowns, average_score=None):
 
     fig.update_layout(
         xaxis_categoryorder='total ascending',
-        plot_bgcolor='#F5F5F8',
+        plot_bgcolor=PlotConfig.BACKGROUND_COLOR,
         margin={'t': 150},
+        font={'size': PlotConfig.FONT_SIZE},
     )
 
     return fig
@@ -365,7 +369,9 @@ def get_column_pairs_plot(score_breakdowns, average_score=None):
             'colorbar_y': 0.8,
             'cmin': 0,
             'cmax': 1,
-            'colorscale': ['#FF0000', '#F16141', '#36B37E'],
+            'colorscale': [
+                PlotConfig.RED, PlotConfig.ORANGE, PlotConfig.GREEN
+            ],
         },
         # Correlation heatmaps color axis
         coloraxis2={
@@ -373,13 +379,16 @@ def get_column_pairs_plot(score_breakdowns, average_score=None):
             'colorbar_y': 0.2,
             'cmin': -1,
             'cmax': 1,
-            'colorscale': ['#03AFF1', '#000036', '#01E0C9'],
+            'colorscale': [
+                PlotConfig.DATACEBO_BLUE, PlotConfig.DATACEBO_DARK, PlotConfig.DATACEBO_GREEN
+            ],
         },
         # Sync the zoom and pan of the bottom 2 graphs
         yaxis3={'visible': False, 'matches': 'y2'},
         xaxis3={'matches': 'x2'},
         height=900,
         width=900,
+        font={'size': PlotConfig.FONT_SIZE},
     )
 
     fig.update_yaxes(autorange='reversed')
@@ -412,13 +421,16 @@ def get_synthesis_plot(score_breakdown):
         names=labels,
         color=['Exact Matches', 'Novel Rows'],
         color_discrete_map={
-            'Exact Matches': '#F16141',
-            'Novel Rows': '#36B37E'
+            'Exact Matches': PlotConfig.ORANGE,
+            'Novel Rows': PlotConfig.GREEN
         },
         hole=0.4,
         title=f'Data Diagnostic: Synthesis (Score={average_score})'
     )
 
     fig.update_traces(hovertemplate='<b>%{label}</b><br>%{value} rows')
+    fig.update_layout(
+        font={'size': PlotConfig.FONT_SIZE}
+    )
 
     return fig

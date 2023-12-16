@@ -31,14 +31,14 @@ class TestNewRowSynthesis:
         })
         metadata = {
             'primary_key': 'pk',
-            'fields': {
-                'pk': {'type': 'id', 'subtype': 'int'},
-                'col1': {'type': 'id', 'subtype': 'int'},
-                'col2': {'type': 'numerical', 'subtype': 'int'},
-                'col3': {'type': 'categorical'},
-                'col4': {'type': 'numerical', 'subtype': 'float'},
-                'col5': {'type': 'categorical'},
-                'col6': {'type': 'datetime', 'format': '%Y-%m-%d'},
+            'columns': {
+                'pk': {'sdtype': 'id'},
+                'col1': {'sdtype': 'id'},
+                'col2': {'sdtype': 'numerical'},
+                'col3': {'sdtype': 'categorical'},
+                'col4': {'sdtype': 'numerical'},
+                'col5': {'sdtype': 'categorical'},
+                'col6': {'sdtype': 'datetime', 'datetime_format': '%Y-%m-%d'},
             },
         }
         metric = NewRowSynthesis()
@@ -61,8 +61,8 @@ class TestNewRowSynthesis:
             'col1': ['PSC 0481, Box 5945\nAPO AP 37588', '9759 8761\nDPO AE 97614'],
         })
         metadata = {
-            'fields': {
-                'col1': {'type': 'categorical'},
+            'columns': {
+                'col1': {'sdtype': 'categorical'},
             },
         }
         metric = NewRowSynthesis()
@@ -90,10 +90,10 @@ class TestNewRowSynthesis:
             'col3': [1.46, 1.56, 1.21, np.nan, 1.92],
         })
         metadata = {
-            'fields': {
-                'col1': {'type': 'numerical', 'subtype': 'int'},
-                'col2': {'type': 'categorical'},
-                'col3': {'type': 'numerical', 'subtype': 'float'},
+            'columns': {
+                'col1': {'sdtype': 'numerical'},
+                'col2': {'sdtype': 'categorical'},
+                'col3': {'sdtype': 'numerical'},
             },
         }
         sample_size = 2
@@ -124,10 +124,10 @@ class TestNewRowSynthesis:
             'col3': [1.35, 1.56, 1.21, np.nan, 1.92],
         })
         metadata = {
-            'fields': {
-                'col1': {'type': 'numerical', 'subtype': 'int'},
-                'col2': {'type': 'categorical'},
-                'col3': {'type': 'numerical', 'subtype': 'float'},
+            'columns': {
+                'col1': {'sdtype': 'numerical'},
+                'col2': {'sdtype': 'categorical'},
+                'col3': {'sdtype': 'numerical'},
             },
         }
         sample_size = 15
@@ -143,6 +143,32 @@ class TestNewRowSynthesis:
             'The provided `synthetic_sample_size` of 15 is larger than the number of '
             'synthetic data rows (5). Proceeding without sampling.'
         )
+
+    def test_compute_with_many_columns(self):
+        """Test the ``compute`` method with more than 32 columns.
+
+        Expect that the new row synthesis is returned.
+        """
+        # Setup
+        num_cols = 32
+        real_data = pd.DataFrame({
+            f'col{i}': list(np.random.uniform(low=0, high=10, size=100)) for i in range(num_cols)
+        })
+        synthetic_data = pd.DataFrame({
+            f'col{i}': list(np.random.uniform(low=0, high=10, size=100)) for i in range(num_cols)
+        })
+        metadata = {
+            'columns': {
+                f'col{i}': {'sdtype': 'numerical'} for i in range(num_cols)
+            },
+        }
+        metric = NewRowSynthesis()
+
+        # Run
+        score = metric.compute(real_data, synthetic_data, metadata)
+
+        # Assert
+        assert score == 1
 
     @patch('sdmetrics.single_table.new_row_synthesis.SingleTableMetric.normalize')
     def test_normalize(self, normalize_mock):

@@ -6,7 +6,7 @@ import pandas as pd
 from sdmetrics.errors import IncomputableMetricError
 from sdmetrics.goal import Goal
 from sdmetrics.single_table.base import SingleTableMetric
-from sdmetrics.utils import get_columns_from_metadata, get_type_from_column_meta
+from sdmetrics.utils import get_columns_from_metadata, get_type_from_column_meta, strip_characters
 
 
 class NewRowSynthesis(SingleTableMetric):
@@ -73,6 +73,10 @@ class NewRowSynthesis(SingleTableMetric):
 
         for field, field_meta in get_columns_from_metadata(metadata).items():
             if get_type_from_column_meta(field_meta) == 'datetime':
+                if len(real_data[field]) > 0 and isinstance(real_data[field][0], str):
+                    real_data[field] = pd.to_datetime(real_data[field])
+                    synthetic_data[field] = pd.to_datetime(synthetic_data[field])
+
                 real_data[field] = pd.to_numeric(real_data[field])
                 synthetic_data[field] = pd.to_numeric(synthetic_data[field])
 
@@ -85,6 +89,22 @@ class NewRowSynthesis(SingleTableMetric):
             categorical_fields = cls._select_fields(metadata, ('categorical', 'boolean'))
         except IncomputableMetricError:
             categorical_fields = []
+
+        for column_name in real_data.columns:
+            new_column_name = strip_characters(['\n', '.', "'"], column_name)
+            if new_column_name != column_name:
+                if new_column_name in real_data.columns:
+                    while new_column_name in real_data.columns:
+                        new_column_name += '_'
+
+                real_data = real_data.rename(columns={column_name: new_column_name})
+                synthetic_data = synthetic_data.rename(columns={column_name: new_column_name})
+                if column_name in numerical_fields:
+                    numerical_fields.remove(column_name)
+                    numerical_fields.append(new_column_name)
+                elif column_name in categorical_fields:
+                    categorical_fields.remove(column_name)
+                    categorical_fields.append(new_column_name)
 
         num_unique_rows = 0
         for index, row in synthetic_data.iterrows():
@@ -108,8 +128,11 @@ class NewRowSynthesis(SingleTableMetric):
 
                 row_filter.append(field_filter)
 
+            engine = None
+            if len(row_filter) >= 32:  # Limit set by NPY_MAXARGS
+                engine = 'python'
             try:
-                matches = real_data.query(' and '.join(row_filter))
+                matches = real_data.query(' and '.join(row_filter), engine=engine)
             except TypeError:
                 if len(real_data) > 10000:
                     warnings.warn('Unable to optimize query. For better formance, set the '

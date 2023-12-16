@@ -6,7 +6,7 @@ import pandas as pd
 
 from sdmetrics.utils import (
     HyperTransformer, get_alternate_keys, get_cardinality_distribution, get_columns_from_metadata,
-    get_type_from_column_meta)
+    get_missing_percentage, get_type_from_column_meta)
 
 
 def test_get_cardinality_distribution():
@@ -30,19 +30,38 @@ def test_get_cardinality_distribution():
     assert cardinality_distribution.to_list() == [2.0, 0.0, 1.0, 3.0, 1.0]
 
 
+def test_get_missing_percentage():
+    """Test the ``get_missing_percentage`` utility function.
+
+    Input:
+    - test column
+
+    Output:
+    - the expected percentage of NaN inside the column.
+    """
+    # Setup
+    column = pd.Series([1, 2, 3, np.nan, 5, 6, np.nan])
+
+    # Run
+    percentage_nan = get_missing_percentage(column)
+
+    # Assert
+    assert percentage_nan == 28.57
+
+
 def test_get_columns_from_metadata():
     """Test the ``get_columns_from_metadata`` method with current metadata format.
 
     Expect that the columns are returned.
     """
     # Setup
-    metadata = {'fields': {'col1': {'type': 'numerical'}}}
+    metadata = {'columns': {'col1': {'sdtype': 'numerical'}}}
 
     # Run
     out = get_columns_from_metadata(metadata)
 
     # Assert
-    assert out == {'col1': {'type': 'numerical'}}
+    assert out == {'col1': {'sdtype': 'numerical'}}
 
 
 def test_get_columns_from_metadata_new_metadata():
@@ -51,13 +70,13 @@ def test_get_columns_from_metadata_new_metadata():
     Expect that the column type is returned.
     """
     # Setup
-    metadata = {'columns': {'col1': {'type': 'numerical'}}}
+    metadata = {'columns': {'col1': {'sdtype': 'numerical'}}}
 
     # Run
     out = get_columns_from_metadata(metadata)
 
     # Assert
-    assert out == {'col1': {'type': 'numerical'}}
+    assert out == {'col1': {'sdtype': 'numerical'}}
 
 
 def test_get_type_from_column_meta():
@@ -66,10 +85,10 @@ def test_get_type_from_column_meta():
     Expect that the column type is returned.
     """
     # Setup
-    field_meta = {'type': 'numerical'}
+    column_meta = {'sdtype': 'numerical'}
 
     # Run
-    out = get_type_from_column_meta(field_meta)
+    out = get_type_from_column_meta(column_meta)
 
     # Assert
     assert out == 'numerical'
